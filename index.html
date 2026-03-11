@@ -3,58 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEON STRIKE : OVERDRIVE</title>
+    <title>GHOST OPS : WARZONE WEB</title>
     <style>
-        :root { --neon: #00f2ff; --enemy: #ff0044; --glass: rgba(0, 242, 255, 0.1); }
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; }
+        :root { --ui-red: #ff3e3e; --ui-gold: #ffcc00; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Oswald', sans-serif; }
         
-        /* UI & MENUS */
-        .overlay { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; background: radial-gradient(circle, #001 0%, #000 100%); z-index: 100; color: var(--neon); }
-        .panel { border: 2px solid var(--neon); padding: 30px; background: var(--glass); box-shadow: 0 0 30px rgba(0,242,255,0.3); border-radius: 15px; text-align: center; width: 320px; }
+        /* OVERLAYS SYSTEM */
+        .screen { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.85); z-index: 100; color: white; }
         .hidden { display: none !important; }
+        .menu-card { background: rgba(20,20,20,0.95); border-left: 5px solid var(--ui-gold); padding: 40px; width: 350px; box-shadow: 0 0 50px rgba(0,0,0,1); }
         
-        input, select, button { width: 100%; padding: 12px; margin: 10px 0; background: #000; border: 1px solid var(--neon); color: var(--neon); font-family: inherit; font-weight: bold; }
-        button:hover { background: var(--neon); color: #000; cursor: pointer; box-shadow: 0 0 15px var(--neon); }
+        input, select, button { width: 100%; padding: 15px; margin: 10px 0; background: #1a1a1a; border: 1px solid #333; color: white; text-transform: uppercase; letter-spacing: 1px; }
+        button { background: var(--ui-gold); color: black; font-weight: 900; border: none; cursor: pointer; }
+        button:hover { background: white; }
 
-        /* HUD JEU */
-        #hud { position: absolute; inset: 0; pointer-events: none; color: var(--neon); padding: 20px; }
-        .crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; border: 1px solid var(--neon); border-radius: 50%; opacity: 0.5; }
-        .score-board { font-size: 24px; text-shadow: 0 0 10px var(--neon); }
-        .health-container { position: absolute; bottom: 30px; right: 30px; width: 250px; text-align: right; }
-        .health-bar { height: 8px; border: 1px solid var(--neon); margin-top: 5px; overflow: hidden; }
-        #health-fill { width: 100%; height: 100%; background: var(--neon); box-shadow: 0 0 10px var(--neon); transition: width 0.2s; }
+        /* HUD CALL OF DUTY STYLE */
+        #hud { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
+        .reticle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 30px; height: 30px; border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; }
+        .reticle::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 4px; height: 4px; background: red; border-radius: 50%; }
+        
+        .bottom-left { position: absolute; bottom: 30px; left: 30px; }
+        .health-num { font-size: 40px; font-weight: bold; }
+        .health-bar { width: 200px; height: 6px; background: rgba(255,255,255,0.2); margin-top: 5px; }
+        #health-fill { width: 100%; height: 100%; background: white; transition: 0.2s; }
+
+        .weapon-info { position: absolute; bottom: 30px; right: 30px; text-align: right; }
+        .ammo { font-size: 50px; font-weight: bold; line-height: 1; }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <div id="login-screen" class="overlay">
-        <div class="panel">
-            <h2>SYSTEM_LOCK</h2>
-            <input type="password" id="pass" placeholder="PASSWORD_">
-            <button onclick="unlock()">ACCESS_DATABASE</button>
+    <div id="login-screen" class="screen">
+        <div class="menu-card">
+            <h2 style="color: var(--ui-gold)">IDENTIFICATION REQUISE</h2>
+            <input type="password" id="pass" placeholder="CODE D'ACCÈS">
+            <button onclick="unlock()">SE CONNECTER</button>
         </div>
     </div>
 
-    <div id="menu-screen" class="overlay hidden">
-        <div class="panel">
-            <h1>NEON STRIKE</h1>
-            <p>CHOOSE DEPLOYMENT ZONE :</p>
-            <select id="map-select">
-                <option value="paris">PARIS 2088 (NEON)</option>
-                <option value="base">WASTELAND (DESERT)</option>
-                <option value="space">STATION 13 (SPACE)</option>
+    <div id="menu-screen" class="screen hidden">
+        <div class="menu-card">
+            <h1>GHOST OPS</h1>
+            <label>ZONE D'OPÉRATION :</label>
+            <select id="map">
+                <option value="paris">PARIS : RUE DE RIVOLI</option>
+                <option value="base">BASE MILITAIRE DÉSAFFECTÉE</option>
+                <option value="space">STATION SPATIALE ISS-2</option>
             </select>
-            <button onclick="startGame()">START_MISSION</button>
-            <div id="pad-status" style="font-size: 10px; margin-top: 10px; opacity: 0.6;">CONTROLLER: NOT_FOUND</div>
+            <button onclick="startMission()">DÉPLOYER</button>
         </div>
     </div>
 
     <div id="hud" class="hidden">
-        <div class="score-board">KILLS: <span id="kills">0</span></div>
-        <div class="crosshair"></div>
-        <div class="health-container">
-            SHIELD_INTEGRITY
+        <div class="reticle"></div>
+        <div class="bottom-left">
+            <div class="health-num">100</div>
             <div class="health-bar"><div id="health-fill"></div></div>
+        </div>
+        <div class="weapon-info">
+            <div style="font-size: 12px; opacity: 0.7;">FUSIL D'ASSAULT M4</div>
+            <div class="ammo">30<span style="font-size: 20px; opacity: 0.5;"> / 90</span></div>
         </div>
     </div>
 
@@ -65,156 +74,145 @@
     <script type="module">
         import * as THREE from 'three';
 
-        let scene, camera, renderer, player, clock;
-        let bots = [], lasers = [], score = 0, health = 100;
-        let input = { w:false, a:false, s:false, d:false, space:false };
+        let scene, camera, renderer, clock, gun;
+        let bots = [], bullets = [];
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let yaw = 0, pitch = 0;
 
-        // --- AUTHENTIFICATION ---
+        // --- AUTH & LAUNCH ---
         window.unlock = () => {
             if(document.getElementById('pass').value === "NEON2026") {
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('menu-screen').classList.remove('hidden');
-            } else { alert("ACCESS_DENIED"); }
+            }
         };
 
-        // --- DEMARRAGE ---
-        window.startGame = () => {
+        window.startMission = () => {
             document.getElementById('menu-screen').classList.add('hidden');
             document.getElementById('hud').classList.remove('hidden');
-            init();
+            initEngine();
+            document.body.requestPointerLock(); // Bloque la souris pour le FPS
         };
 
-        function init() {
+        function initEngine() {
             scene = new THREE.Scene();
-            const mapType = document.getElementById('map-select').value;
-            
-            // Couleurs selon la map
-            if(mapType === 'paris') scene.background = new THREE.Color(0x000210);
-            else if(mapType === 'base') scene.background = new THREE.Color(0x221100);
-            else scene.background = new THREE.Color(0x000000);
+            scene.background = new THREE.Color(0x111111);
+            scene.fog = new THREE.Fog(0x111111, 0, 100);
 
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
             document.body.appendChild(renderer.domElement);
             clock = new THREE.Clock();
 
-            // LUMIÈRES
-            scene.add(new THREE.AmbientLight(0x404040, 2));
-            const sun = new THREE.DirectionalLight(0x00f2ff, 1);
+            // LUMIÈRES RÉALISTES
+            const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambient);
+            const sun = new THREE.DirectionalLight(0xffffff, 1);
             sun.position.set(10, 20, 10);
+            sun.castShadow = true;
             scene.add(sun);
 
-            // CRÉATION DU JOUEUR (L'OPÉRATEUR NEON-GHOST)
-            player = new THREE.Group();
-            const body = new THREE.Mesh(new THREE.BoxGeometry(1, 0.6, 2), new THREE.MeshPhongMaterial({color: 0x00f2ff, emissive: 0x004455}));
-            const wingR = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.1, 0.8), new THREE.MeshPhongMaterial({color: 0x00f2ff}));
-            wingR.position.x = 1.2;
-            const wingL = wingR.clone(); wingL.position.x = -1.2;
-            player.add(body, wingR, wingL);
-            player.position.y = 10;
-            scene.add(player);
+            // SOL (TEXTURÉ)
+            const floorGeo = new THREE.PlaneGeometry(1000, 1000);
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
 
-            // SOL (GRID)
-            const grid = new THREE.GridHelper(2000, 100, 0x00f2ff, 0x001122);
-            scene.add(grid);
+            // CRÉATION DE L'ARME (VUE FPS)
+            gun = new THREE.Group();
+            const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 1.5), new THREE.MeshStandardMaterial({color: 0x111111}));
+            barrel.position.set(0.5, -0.5, -1);
+            gun.add(barrel);
+            camera.add(gun);
+            scene.add(camera);
 
-            // SPAWN INITIAL DES BOTS
-            for(let i=0; i<15; i++) spawnBot();
+            // ENNEMIS (SOLDIERS)
+            for(let i=0; i<10; i++) spawnSoldier();
+
+            // ÉCOUTEURS
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mousedown', () => shoot());
+            window.addEventListener('keydown', (e) => handleKey(e.code, true));
+            window.addEventListener('keyup', (e) => handleKey(e.code, false));
 
             animate();
         }
 
-        function spawnBot() {
-            const bot = new THREE.Group();
-            const head = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 1.2), new THREE.MeshPhongMaterial({color: 0xff0044}));
-            const eye = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.2), new THREE.MeshBasicMaterial({color: 0xffffff}));
-            eye.position.set(0, 0.2, 0.61);
-            bot.add(head, eye);
-            bot.position.set(Math.random()*600-300, 1, Math.random()*600-300);
+        function spawnSoldier() {
+            const bot = new THREE.Mesh(
+                new THREE.CapsuleGeometry(0.5, 1.2, 4, 8),
+                new THREE.MeshStandardMaterial({ color: 0x4b5320 }) // Kaki
+            );
+            bot.position.set(Math.random()*100-50, 1, Math.random()*100-50);
+            bot.castShadow = true;
             bot.userData = { health: 100 };
             scene.add(bot);
             bots.push(bot);
         }
 
-        function fireLaser() {
-            const geo = new THREE.CylinderGeometry(0.05, 0.05, 4);
-            geo.rotateX(Math.PI/2);
-            const mat = new THREE.MeshBasicMaterial({color: 0x00f2ff});
-            const laser = new THREE.Mesh(geo, mat);
-            laser.position.copy(player.position);
-            laser.quaternion.copy(player.quaternion);
-            scene.add(laser);
-            lasers.push(laser);
-            setTimeout(() => { scene.remove(laser); lasers.shift(); }, 1000);
+        function onMouseMove(e) {
+            if (document.pointerLockElement === document.body) {
+                yaw -= e.movementX * 0.002;
+                pitch -= e.movementY * 0.002;
+                pitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, pitch));
+                camera.rotation.order = "YXZ";
+                camera.rotation.set(pitch, yaw, 0);
+            }
+        }
+
+        function handleKey(code, isDown) {
+            if(code === 'KeyW' || code === 'ArrowUp') moveForward = isDown;
+            if(code === 'KeyS' || code === 'ArrowDown') moveBackward = isDown;
+            if(code === 'KeyA' || code === 'ArrowLeft') moveLeft = isDown;
+            if(code === 'KeyD' || code === 'ArrowRight') moveRight = isDown;
+        }
+
+        function shoot() {
+            const bullet = new THREE.Mesh(new THREE.SphereGeometry(0.05), new THREE.MeshBasicMaterial({color: 0xffff00}));
+            bullet.position.copy(camera.position);
+            bullet.quaternion.copy(camera.quaternion);
+            scene.add(bullet);
+            bullets.push(bullet);
+            setTimeout(() => { scene.remove(bullet); bullets.shift(); }, 1000);
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            const dt = clock.getDelta();
+            const delta = clock.getDelta();
             
-            // CONTRÔLES (CLAVIER + MANETTE)
-            const gp = navigator.getGamepads()[0];
-            if(gp) {
-                document.getElementById('pad-status').innerText = "CONTROLLER: CONNECTED";
-                player.translateZ(-gp.axes[1] * 2);
-                player.rotation.y -= gp.axes[0] * 0.05;
-                if(gp.buttons[7].pressed && Math.random() < 0.1) fireLaser(); // R2 pour tirer
-            } else {
-                if(input.w) player.translateZ(1.5);
-                if(input.s) player.translateZ(-1);
-                if(input.a) player.rotation.y += 0.04;
-                if(input.d) player.rotation.y -= 0.04;
-            }
+            // DÉPLACEMENT
+            const speed = 5 * delta;
+            if (moveForward) camera.translateZ(-speed);
+            if (moveBackward) camera.translateZ(speed);
+            if (moveLeft) camera.translateX(-speed);
+            if (moveRight) camera.translateX(speed);
+            camera.position.y = 1.7; // Taille humaine
 
-            // PHYSIQUE LASERS & COLLISIONS
-            lasers.forEach((l, lIdx) => {
-                l.translateZ(5);
-                bots.forEach((b, bIdx) => {
-                    if(l.position.distanceTo(b.position) < 5) {
-                        scene.remove(b);
-                        bots.splice(bIdx, 1);
-                        score += 100;
-                        document.getElementById('kills').innerText = score;
-                        spawnBot(); // Remplace l'ennemi tué
+            // BALLES & COLLISIONS
+            bullets.forEach((b, bi) => {
+                b.translateZ(-2);
+                bots.forEach((bot, botI) => {
+                    if(b.position.distanceTo(bot.position) < 1) {
+                        scene.remove(bot);
+                        bots.splice(botI, 1);
+                        spawnSoldier();
                     }
                 });
             });
 
-            // IA DES BOTS
+            // IA BOTS
             bots.forEach(bot => {
-                bot.lookAt(player.position);
-                if(bot.position.distanceTo(player.position) > 10) {
-                    bot.translateZ(0.2);
-                } else {
-                    // Le bot inflige des dégâts s'il est trop proche
-                    health -= 0.1;
-                    document.getElementById('health-fill').style.width = health + "%";
-                }
+                bot.lookAt(camera.position);
+                bot.translateZ(0.03);
             });
-
-            // CAMERA
-            const camPos = new THREE.Vector3(0, 8, -15).applyQuaternion(player.quaternion);
-            camera.position.copy(player.position).add(camPos);
-            camera.lookAt(player.position);
 
             renderer.render(scene, camera);
         }
-
-        // INPUTS
-        window.onkeydown = (e) => { 
-            if(e.key === "w" || e.key === "z") input.w = true;
-            if(e.key === "s") input.s = true;
-            if(e.key === "a" || e.key === "q") input.a = true;
-            if(e.key === "d") input.d = true;
-            if(e.key === " ") fireLaser();
-        };
-        window.onkeyup = (e) => { 
-            if(e.key === "w" || e.key === "z") input.w = false;
-            if(e.key === "s") input.s = false;
-            if(e.key === "a" || e.key === "q") input.a = false;
-            if(e.key === "d") input.d = false;
-        };
     </script>
 </body>
 </html>
