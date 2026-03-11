@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NEON STRIKE : OVERDRIVE</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        :root { --neon: #00f2ff; --enemy: #ff0044; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
+        canvas { display: block; }
+
+        /* UI STRATÉGIQUE */
+        .overlay { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.9); z-index: 100; color: var(--neon); text-align: center; }
+        .hidden { display: none !important; }
+        .panel { border: 2px solid var(--neon); padding: 2rem; background: rgba(0,242,255,0.05); box-shadow: 0 0 20px var(--neon); border-radius: 10px; width: 300px; }
+        
+        input, select, button { width: 100%; padding: 12px; margin: 10px 0; background: #000; border: 1px solid var(--neon); color: var(--neon); font-weight: bold; cursor: pointer; }
+        button:hover { background: var(--neon); color: #000; }
+
+        /* HUD JEU */
+        #hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--neon); font-size: 2rem; opacity: 0.6; }
+        .stats { position: absolute; bottom: 20px; left: 20px; color: var(--neon); font-family: monospace; }
+        .health-bar { position: absolute; bottom: 20px; right: 20px; width: 200px; height: 10px; border: 1px solid var(--neon); }
+        #health-fill { width: 100%; height: 100%; background: var(--neon); transition: width 0.3s; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen" class="overlay">
+        <div class="panel">
+            <h2>ACCÈS SÉCURISÉ</h2>
+            <input type="password" id="pass" placeholder="MOT DE PASSE">
+            <button onclick="unlock()">AUTH_LEVEL_1</button>
+        </div>
+    </div>
+
+    <div id="menu-screen" class="overlay hidden">
+        <div class="panel">
+            <h1>NEON STRIKE</h1>
+            <label>SÉLECTIONNER ZONE :</label>
+            <select id="map">
+                <option value="paris">PARIS 2088</option>
+                <option value="base">BASE DÉSAFFECTÉE</option>
+                <option value="space">STATION SPATIALE</option>
+            </select>
+            <button onclick="start()">LANCER SIMULATION</button>
+            <p id="pad-info" style="font-size: 0.7rem;">MANETTE : RECHERCHE...</p>
+        </div>
+    </div>
+
+    <div id="hud" class="hidden">
+        <div class="crosshair">+</div>
+        <div class="stats">
+            VIT: <span id="v-val">0</span> km/h<br>
+            ALT: <span id="a-val">0</span> m
+        </div>
+        <div class="health-bar"><div id="health-fill"></div></div>
+    </div>
+
+    <script type="importmap">
+    { "imports": { "three": "https://unpkg.com/three@0.150.1/build/three.module.js" } }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        let scene, camera, renderer, player, clock;
+        let bots = [], lasers = [];
+        let speed = 0, health = 100;
+        let input = { z:false, s:false, q:false, d:false, fire:false };
+
+        // --- AUTHENTIFICATION ---
+        window.unlock = () => {
+            if(document.getElementById('pass').value === "NEON2026") {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('menu-screen').classList.remove('hidden');
+            }
+        };
+
+        // --- DÉMARRAGE ---
+        window.start = () => {
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('hud').classList.remove('hidden');
+            init();
+        };
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x000000, 0.002);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+            clock = new THREE.Clock();
+
+            // LUMIÈRES
+            const ambient = new THREE.AmbientLight(0x404040, 2);
+            scene.add(ambient);
+
+            // PLAYER (L'AVION)
+            const shipGeo = new THREE.ConeGeometry(0.5, 2, 8);
+            shipGeo.rotateX(Math.PI / 2);
+            const shipMat = new THREE.MeshPhongMaterial({ color: 0x00f2ff, wireframe: true });
+            player = new THREE.Mesh(shipGeo, shipMat);
+            player.position.y = 50;
+            scene.add(player);
+
+            // GÉNÉRATION MAP (SOL)
+            const grid = new THREE.GridHelper(10000, 200, 0x00f2ff, 0x222222);
+            scene.add(grid);
+
+            // SPAWN BOTS (10 robots ennemis)
+            for(let i=0; i<10; i++) spawnBot();
+
+            animate();
+        }
+
+        function spawnBot() {
+            const botGeo = new THREE.BoxGeometry(2, 2, 2);
+            const botMat = new THREE.MeshPhongMaterial({ color: 0xff0044 });
+            const bot = new THREE.Mesh(botGeo, botMat);
+            bot.position.set(Math.random()*400-200, 1, Math.random()*400-200);
+            bot.userData = { health: 50 };
+            scene.add(bot);
+            bots.push(bot);
+        }
+
+        function fireLaser() {
+            const geo = new THREE.SphereGeometry(0.1, 8, 8);
+            const mat = new THREE.MeshBasicMaterial({ color: 0x00f2ff });
+            const laser = new THREE.Mesh(geo, mat);
+            laser.position.copy(player.position);
+            laser.quaternion.copy(player.quaternion);
+            scene.add(laser);
+            lasers.push(laser);
+            setTimeout(() => { scene.remove(laser); lasers.shift(); }, 2000);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getElapsedTime();
+
+            // INPUTS & MANETTE
+            const gamepad = navigator.getGamepads()[0];
+            if(gamepad) {
+                document.getElementById('pad-info').innerText = "MANETTE : ACTIVE";
+                speed = -gamepad.axes[1] * 2;
+                player.rotation.y -= gamepad.axes[0] * 0.05;
+                player.rotation.x = gamepad.axes[3] * 0.5;
+                if(gamepad.buttons[7].pressed) fireLaser(); // R2 pour tirer
+            } else {
+                if(input.z) speed = Math.min(speed + 0.01, 2);
+                else speed *= 0.98;
+                if(input.q) player.rotation.y += 0.03;
+                if(input.d) player.rotation.y -= 0.03;
+            }
+
+            player.translateZ(speed);
+            
+            // IA DES BOTS
+            bots.forEach(bot => {
+                bot.lookAt(player.position);
+                if(bot.position.distanceTo(player.position) < 100) {
+                    bot.translateZ(0.1); // Le bot te suit
+                }
+            });
+
+            // CAMERA FOLLOW
+            const offset = new THREE.Vector3(0, 5, 15).applyQuaternion(player.quaternion);
+            camera.position.copy(player.position).add(offset);
+            camera.lookAt(player.position);
+
+            // UI UPDATES
+            document.getElementById('v-val').innerText = Math.round(speed * 100);
+            document.getElementById('a-val').innerText = Math.round(player.position.y);
+
+            renderer.render(scene, camera);
+        }
+
+        // ÉVÉNEMENTS
+        window.onkeydown = (e) => { input[e.key] = true; if(e.key === " ") fireLaser(); };
+        window.onkeyup = (e) => { input[e.key] = false; };
+        window.onresize = () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        };
+    </script>
+</body>
+</html>
