@@ -4,83 +4,81 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>NEON STRIKE : OVERDRIVE</title>
-    <link rel="manifest" href="manifest.json">
     <style>
-        :root { --neon: #00f2ff; --enemy: #ff0044; }
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
-        canvas { display: block; }
-
-        /* UI STRATÉGIQUE */
-        .overlay { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.9); z-index: 100; color: var(--neon); text-align: center; }
-        .hidden { display: none !important; }
-        .panel { border: 2px solid var(--neon); padding: 2rem; background: rgba(0,242,255,0.05); box-shadow: 0 0 20px var(--neon); border-radius: 10px; width: 300px; }
+        :root { --neon: #00f2ff; --enemy: #ff0044; --glass: rgba(0, 242, 255, 0.1); }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; }
         
-        input, select, button { width: 100%; padding: 12px; margin: 10px 0; background: #000; border: 1px solid var(--neon); color: var(--neon); font-weight: bold; cursor: pointer; }
-        button:hover { background: var(--neon); color: #000; }
+        /* UI & MENUS */
+        .overlay { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; background: radial-gradient(circle, #001 0%, #000 100%); z-index: 100; color: var(--neon); }
+        .panel { border: 2px solid var(--neon); padding: 30px; background: var(--glass); box-shadow: 0 0 30px rgba(0,242,255,0.3); border-radius: 15px; text-align: center; width: 320px; }
+        .hidden { display: none !important; }
+        
+        input, select, button { width: 100%; padding: 12px; margin: 10px 0; background: #000; border: 1px solid var(--neon); color: var(--neon); font-family: inherit; font-weight: bold; }
+        button:hover { background: var(--neon); color: #000; cursor: pointer; box-shadow: 0 0 15px var(--neon); }
 
         /* HUD JEU */
-        #hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        .crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--neon); font-size: 2rem; opacity: 0.6; }
-        .stats { position: absolute; bottom: 20px; left: 20px; color: var(--neon); font-family: monospace; }
-        .health-bar { position: absolute; bottom: 20px; right: 20px; width: 200px; height: 10px; border: 1px solid var(--neon); }
-        #health-fill { width: 100%; height: 100%; background: var(--neon); transition: width 0.3s; }
+        #hud { position: absolute; inset: 0; pointer-events: none; color: var(--neon); padding: 20px; }
+        .crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; border: 1px solid var(--neon); border-radius: 50%; opacity: 0.5; }
+        .score-board { font-size: 24px; text-shadow: 0 0 10px var(--neon); }
+        .health-container { position: absolute; bottom: 30px; right: 30px; width: 250px; text-align: right; }
+        .health-bar { height: 8px; border: 1px solid var(--neon); margin-top: 5px; overflow: hidden; }
+        #health-fill { width: 100%; height: 100%; background: var(--neon); box-shadow: 0 0 10px var(--neon); transition: width 0.2s; }
     </style>
 </head>
 <body>
 
     <div id="login-screen" class="overlay">
         <div class="panel">
-            <h2>ACCÈS SÉCURISÉ</h2>
-            <input type="password" id="pass" placeholder="MOT DE PASSE">
-            <button onclick="unlock()">AUTH_LEVEL_1</button>
+            <h2>SYSTEM_LOCK</h2>
+            <input type="password" id="pass" placeholder="PASSWORD_">
+            <button onclick="unlock()">ACCESS_DATABASE</button>
         </div>
     </div>
 
     <div id="menu-screen" class="overlay hidden">
         <div class="panel">
             <h1>NEON STRIKE</h1>
-            <label>SÉLECTIONNER ZONE :</label>
-            <select id="map">
-                <option value="paris">PARIS 2088</option>
-                <option value="base">BASE DÉSAFFECTÉE</option>
-                <option value="space">STATION SPATIALE</option>
+            <p>CHOOSE DEPLOYMENT ZONE :</p>
+            <select id="map-select">
+                <option value="paris">PARIS 2088 (NEON)</option>
+                <option value="base">WASTELAND (DESERT)</option>
+                <option value="space">STATION 13 (SPACE)</option>
             </select>
-            <button onclick="start()">LANCER SIMULATION</button>
-            <p id="pad-info" style="font-size: 0.7rem;">MANETTE : RECHERCHE...</p>
+            <button onclick="startGame()">START_MISSION</button>
+            <div id="pad-status" style="font-size: 10px; margin-top: 10px; opacity: 0.6;">CONTROLLER: NOT_FOUND</div>
         </div>
     </div>
 
     <div id="hud" class="hidden">
-        <div class="crosshair">+</div>
-        <div class="stats">
-            VIT: <span id="v-val">0</span> km/h<br>
-            ALT: <span id="a-val">0</span> m
+        <div class="score-board">KILLS: <span id="kills">0</span></div>
+        <div class="crosshair"></div>
+        <div class="health-container">
+            SHIELD_INTEGRITY
+            <div class="health-bar"><div id="health-fill"></div></div>
         </div>
-        <div class="health-bar"><div id="health-fill"></div></div>
     </div>
 
     <script type="importmap">
-    { "imports": { "three": "https://unpkg.com/three@0.150.1/build/three.module.js" } }
+        { "imports": { "three": "https://unpkg.com/three@0.150.1/build/three.module.js" } }
     </script>
 
     <script type="module">
         import * as THREE from 'three';
 
         let scene, camera, renderer, player, clock;
-        let bots = [], lasers = [];
-        let speed = 0, health = 100;
-        let input = { z:false, s:false, q:false, d:false, fire:false };
+        let bots = [], lasers = [], score = 0, health = 100;
+        let input = { w:false, a:false, s:false, d:false, space:false };
 
         // --- AUTHENTIFICATION ---
         window.unlock = () => {
             if(document.getElementById('pass').value === "NEON2026") {
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('menu-screen').classList.remove('hidden');
-            }
+            } else { alert("ACCESS_DENIED"); }
         };
 
-        // --- DÉMARRAGE ---
-        window.start = () => {
+        // --- DEMARRAGE ---
+        window.startGame = () => {
             document.getElementById('menu-screen').classList.add('hidden');
             document.getElementById('hud').classList.remove('hidden');
             init();
@@ -88,104 +86,134 @@
 
         function init() {
             scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x000000, 0.002);
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
+            const mapType = document.getElementById('map-select').value;
+            
+            // Couleurs selon la map
+            if(mapType === 'paris') scene.background = new THREE.Color(0x000210);
+            else if(mapType === 'base') scene.background = new THREE.Color(0x221100);
+            else scene.background = new THREE.Color(0x000000);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
             clock = new THREE.Clock();
 
             // LUMIÈRES
-            const ambient = new THREE.AmbientLight(0x404040, 2);
-            scene.add(ambient);
+            scene.add(new THREE.AmbientLight(0x404040, 2));
+            const sun = new THREE.DirectionalLight(0x00f2ff, 1);
+            sun.position.set(10, 20, 10);
+            scene.add(sun);
 
-            // PLAYER (L'AVION)
-            const shipGeo = new THREE.ConeGeometry(0.5, 2, 8);
-            shipGeo.rotateX(Math.PI / 2);
-            const shipMat = new THREE.MeshPhongMaterial({ color: 0x00f2ff, wireframe: true });
-            player = new THREE.Mesh(shipGeo, shipMat);
-            player.position.y = 50;
+            // CRÉATION DU JOUEUR (L'OPÉRATEUR NEON-GHOST)
+            player = new THREE.Group();
+            const body = new THREE.Mesh(new THREE.BoxGeometry(1, 0.6, 2), new THREE.MeshPhongMaterial({color: 0x00f2ff, emissive: 0x004455}));
+            const wingR = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.1, 0.8), new THREE.MeshPhongMaterial({color: 0x00f2ff}));
+            wingR.position.x = 1.2;
+            const wingL = wingR.clone(); wingL.position.x = -1.2;
+            player.add(body, wingR, wingL);
+            player.position.y = 10;
             scene.add(player);
 
-            // GÉNÉRATION MAP (SOL)
-            const grid = new THREE.GridHelper(10000, 200, 0x00f2ff, 0x222222);
+            // SOL (GRID)
+            const grid = new THREE.GridHelper(2000, 100, 0x00f2ff, 0x001122);
             scene.add(grid);
 
-            // SPAWN BOTS (10 robots ennemis)
-            for(let i=0; i<10; i++) spawnBot();
+            // SPAWN INITIAL DES BOTS
+            for(let i=0; i<15; i++) spawnBot();
 
             animate();
         }
 
         function spawnBot() {
-            const botGeo = new THREE.BoxGeometry(2, 2, 2);
-            const botMat = new THREE.MeshPhongMaterial({ color: 0xff0044 });
-            const bot = new THREE.Mesh(botGeo, botMat);
-            bot.position.set(Math.random()*400-200, 1, Math.random()*400-200);
-            bot.userData = { health: 50 };
+            const bot = new THREE.Group();
+            const head = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 1.2), new THREE.MeshPhongMaterial({color: 0xff0044}));
+            const eye = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.2), new THREE.MeshBasicMaterial({color: 0xffffff}));
+            eye.position.set(0, 0.2, 0.61);
+            bot.add(head, eye);
+            bot.position.set(Math.random()*600-300, 1, Math.random()*600-300);
+            bot.userData = { health: 100 };
             scene.add(bot);
             bots.push(bot);
         }
 
         function fireLaser() {
-            const geo = new THREE.SphereGeometry(0.1, 8, 8);
-            const mat = new THREE.MeshBasicMaterial({ color: 0x00f2ff });
+            const geo = new THREE.CylinderGeometry(0.05, 0.05, 4);
+            geo.rotateX(Math.PI/2);
+            const mat = new THREE.MeshBasicMaterial({color: 0x00f2ff});
             const laser = new THREE.Mesh(geo, mat);
             laser.position.copy(player.position);
             laser.quaternion.copy(player.quaternion);
             scene.add(laser);
             lasers.push(laser);
-            setTimeout(() => { scene.remove(laser); lasers.shift(); }, 2000);
+            setTimeout(() => { scene.remove(laser); lasers.shift(); }, 1000);
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            const delta = clock.getElapsedTime();
-
-            // INPUTS & MANETTE
-            const gamepad = navigator.getGamepads()[0];
-            if(gamepad) {
-                document.getElementById('pad-info').innerText = "MANETTE : ACTIVE";
-                speed = -gamepad.axes[1] * 2;
-                player.rotation.y -= gamepad.axes[0] * 0.05;
-                player.rotation.x = gamepad.axes[3] * 0.5;
-                if(gamepad.buttons[7].pressed) fireLaser(); // R2 pour tirer
+            const dt = clock.getDelta();
+            
+            // CONTRÔLES (CLAVIER + MANETTE)
+            const gp = navigator.getGamepads()[0];
+            if(gp) {
+                document.getElementById('pad-status').innerText = "CONTROLLER: CONNECTED";
+                player.translateZ(-gp.axes[1] * 2);
+                player.rotation.y -= gp.axes[0] * 0.05;
+                if(gp.buttons[7].pressed && Math.random() < 0.1) fireLaser(); // R2 pour tirer
             } else {
-                if(input.z) speed = Math.min(speed + 0.01, 2);
-                else speed *= 0.98;
-                if(input.q) player.rotation.y += 0.03;
-                if(input.d) player.rotation.y -= 0.03;
+                if(input.w) player.translateZ(1.5);
+                if(input.s) player.translateZ(-1);
+                if(input.a) player.rotation.y += 0.04;
+                if(input.d) player.rotation.y -= 0.04;
             }
 
-            player.translateZ(speed);
-            
+            // PHYSIQUE LASERS & COLLISIONS
+            lasers.forEach((l, lIdx) => {
+                l.translateZ(5);
+                bots.forEach((b, bIdx) => {
+                    if(l.position.distanceTo(b.position) < 5) {
+                        scene.remove(b);
+                        bots.splice(bIdx, 1);
+                        score += 100;
+                        document.getElementById('kills').innerText = score;
+                        spawnBot(); // Remplace l'ennemi tué
+                    }
+                });
+            });
+
             // IA DES BOTS
             bots.forEach(bot => {
                 bot.lookAt(player.position);
-                if(bot.position.distanceTo(player.position) < 100) {
-                    bot.translateZ(0.1); // Le bot te suit
+                if(bot.position.distanceTo(player.position) > 10) {
+                    bot.translateZ(0.2);
+                } else {
+                    // Le bot inflige des dégâts s'il est trop proche
+                    health -= 0.1;
+                    document.getElementById('health-fill').style.width = health + "%";
                 }
             });
 
-            // CAMERA FOLLOW
-            const offset = new THREE.Vector3(0, 5, 15).applyQuaternion(player.quaternion);
-            camera.position.copy(player.position).add(offset);
+            // CAMERA
+            const camPos = new THREE.Vector3(0, 8, -15).applyQuaternion(player.quaternion);
+            camera.position.copy(player.position).add(camPos);
             camera.lookAt(player.position);
-
-            // UI UPDATES
-            document.getElementById('v-val').innerText = Math.round(speed * 100);
-            document.getElementById('a-val').innerText = Math.round(player.position.y);
 
             renderer.render(scene, camera);
         }
 
-        // ÉVÉNEMENTS
-        window.onkeydown = (e) => { input[e.key] = true; if(e.key === " ") fireLaser(); };
-        window.onkeyup = (e) => { input[e.key] = false; };
-        window.onresize = () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+        // INPUTS
+        window.onkeydown = (e) => { 
+            if(e.key === "w" || e.key === "z") input.w = true;
+            if(e.key === "s") input.s = true;
+            if(e.key === "a" || e.key === "q") input.a = true;
+            if(e.key === "d") input.d = true;
+            if(e.key === " ") fireLaser();
+        };
+        window.onkeyup = (e) => { 
+            if(e.key === "w" || e.key === "z") input.w = false;
+            if(e.key === "s") input.s = false;
+            if(e.key === "a" || e.key === "q") input.a = false;
+            if(e.key === "d") input.d = false;
         };
     </script>
 </body>
