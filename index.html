@@ -3,32 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GHOST OPS : ULTIMATE</title>
+    <title>GHOST OPS : TOTAL WAR</title>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap" rel="stylesheet">
     <style>
-        :root { --gold: #ffcc00; --danger: #ff3e3e; }
-        body { margin: 0; overflow: hidden; background: #050505; font-family: 'Oswald', sans-serif; color: white; touch-action: none; }
+        :root { --gold: #ffcc00; }
+        body { margin: 0; overflow: hidden; background: #87CEEB; font-family: 'Oswald', sans-serif; touch-action: none; }
         
-        /* UI OVERLAYS */
+        /* INTERFACE */
         .overlay { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.8); z-index: 100; }
-        .card { background: #111; border-left: 4px solid var(--gold); padding: 30px; width: 300px; text-align: center; }
+        .card { background: #111; border-top: 4px solid var(--gold); padding: 30px; width: 280px; text-align: center; color: white; border-radius: 10px; }
         .hidden { display: none !important; }
-        button { width: 100%; padding: 12px; margin: 8px 0; background: var(--gold); border: none; font-family: inherit; font-weight: 900; cursor: pointer; text-transform: uppercase; }
+        button { width: 100%; padding: 15px; margin: 10px 0; background: var(--gold); border: none; font-weight: 900; cursor: pointer; text-transform: uppercase; border-radius: 5px; }
 
-        /* HUD & TOUCH CONTROLS */
-        #hud { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
-        .ammo-box { position: absolute; bottom: 30px; right: 30px; text-align: right; }
-        #touch-fire { position: absolute; bottom: 50px; right: 150px; width: 80px; height: 80px; background: rgba(255,255,255,0.2); border-radius: 50%; pointer-events: auto; display: flex; justify-content: center; align-items: center; border: 2px solid white; }
-        #pause-btn { position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; background: rgba(255,255,255,0.1); pointer-events: auto; color: white; border: 1px solid white; display:flex; align-items:center; justify-content:center;}
+        /* HUD JEU */
+        #hud { position: absolute; inset: 0; pointer-events: none; z-index: 10; color: white; }
+        .stats { position: absolute; top: 20px; left: 20px; font-size: 24px; color: var(--gold); }
+        .weapon-ui { position: absolute; bottom: 20px; right: 20px; text-align: right; }
+        
+        /* CONTRÔLES TACTILES IPAD */
+        #joystick-zone { position: absolute; bottom: 40px; left: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; pointer-events: auto; border: 2px solid rgba(255,255,255,0.3); }
+        #fire-btn { position: absolute; bottom: 40px; right: 140px; width: 90px; height: 90px; background: rgba(255,62,62,0.6); border-radius: 50%; pointer-events: auto; display: flex; justify-content: center; align-items: center; font-weight: bold; border: 3px solid white; }
+        #pause-btn { position: absolute; top: 20px; right: 20px; width: 50px; height: 50px; background: rgba(0,0,0,0.5); pointer-events: auto; border: 1px solid white; border-radius: 5px; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
 
     <div id="login-screen" class="overlay">
         <div class="card">
-            <h2>GHOST OPS : ACCÈS</h2>
-            <input type="password" id="pass" style="width:90%; padding:10px; margin-bottom:10px;" placeholder="CODE_">
-            <button onclick="unlock()">AUTH_</button>
+            <h2 style="color:var(--gold)">UNITÉ D'ÉLITE</h2>
+            <input type="password" id="pass" style="width:80%; padding:10px;" placeholder="CODE ACCÈS">
+            <button onclick="unlock()">DÉPLOYER</button>
         </div>
     </div>
 
@@ -37,18 +41,20 @@
             <h1>PAUSE</h1>
             <button onclick="resume()">REPRENDRE</button>
             <button onclick="location.reload()">RECOMMENCER</button>
-            <button onclick="alert('Menu Principal...')">RÉGLAGES</button>
-            <button onclick="window.close()" style="background:#444; color:white;">QUITTER</button>
+            <button onclick="alert('Sensibilité: 100%')">RÉGLAGES</button>
+            <button onclick="location.href='https://github.com'" style="background:#444; color:white;">QUITTER</button>
         </div>
     </div>
 
     <div id="hud" class="hidden">
+        <div class="stats">KILLS: <span id="kill-count">0</span></div>
         <div id="pause-btn" onclick="pause()">||</div>
-        <div class="ammo-box">
-            <div style="font-size:12px; opacity:0.6;">M4A1 CARBINE</div>
+        <div class="weapon-ui">
+            <div style="font-size:14px; opacity:0.8;">M4A1 GHOST</div>
             <div style="font-size:50px;" id="ammo-val">30</div>
         </div>
-        <div id="touch-fire">FIRE</div>
+        <div id="joystick-zone"></div>
+        <div id="fire-btn">TIRE</div>
     </div>
 
     <script type="importmap">
@@ -59,12 +65,13 @@
         import * as THREE from 'three';
 
         let scene, camera, renderer, clock, weapon, gunSound;
-        let bots = [], ammo = 30, isPaused = false;
-        let move = { f: 0, r: 0 };
+        let enemies = [], ammo = 30, kills = 0, isPaused = false;
+        let moveDir = { x: 0, z: 0 };
 
         window.unlock = () => {
             if(document.getElementById('pass').value === "NEON2026") {
                 document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('hud').classList.remove('hidden');
                 init();
             }
         };
@@ -74,83 +81,112 @@
 
         function init() {
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x0a0a0a);
-            scene.fog = new THREE.Fog(0x0a0a0a, 0, 150);
+            scene.background = new THREE.Color(0x87CEEB); // Ciel bleu (fini le noir !)
+            scene.fog = new THREE.Fog(0x87CEEB, 20, 100);
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.outputEncoding = THREE.sRGBEncoding;
             document.body.appendChild(renderer.domElement);
             clock = new THREE.Clock();
+
+            // LUMIÈRES PUISSANTES
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.2);
+            scene.add(hemiLight);
+            const sun = new THREE.DirectionalLight(0xffffff, 1);
+            sun.position.set(5, 10, 7.5);
+            scene.add(sun);
+
+            // SOL (HERBE / BITUME)
+            const ground = new THREE.Mesh(
+                new THREE.PlaneGeometry(500, 500),
+                new THREE.MeshStandardMaterial({ color: 0x333333 })
+            );
+            ground.rotation.x = -Math.PI/2;
+            scene.add(ground);
+
+            // DÉCOR : IMMEUBLES VISIBLES
+            for(let i=0; i<40; i++) {
+                const h = 5 + Math.random()*15;
+                const bGeo = new THREE.BoxGeometry(4, h, 4);
+                const bMat = new THREE.MeshStandardMaterial({ color: 0x555555 });
+                const b = new THREE.Mesh(bGeo, bMat);
+                b.position.set(Math.random()*160-80, h/2, Math.random()*160-80);
+                scene.add(b);
+            }
+
+            // ARME MODÉLISÉE
+            weapon = new THREE.Group();
+            const gBody = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.2, 0.7), new THREE.MeshStandardMaterial({color:0x111111}));
+            const gBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.5), new THREE.MeshStandardMaterial({color:0x000000}));
+            gBarrel.rotation.x = Math.PI/2; gBarrel.position.z = -0.5;
+            weapon.add(gBody, gBarrel);
+            weapon.position.set(0.4, -0.4, -0.6);
+            camera.add(weapon);
+            scene.add(camera);
 
             // AUDIO
             const listener = new THREE.AudioListener();
             camera.add(listener);
             gunSound = new THREE.Audio(listener);
-            const audioLoader = new THREE.AudioLoader();
-            // Son de tir (libre de droit)
-            audioLoader.load('https://actions.google.com/sounds/v1/weapons/fire_arm_shot.ogg', (buffer) => {
+            new THREE.AudioLoader().load('https://actions.google.com/sounds/v1/weapons/fire_arm_shot.ogg', buffer => {
                 gunSound.setBuffer(buffer);
-                gunSound.setVolume(0.5);
             });
 
-            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-            
-            // DÉCORS : BÂTIMENTS
-            for(let i=0; i<30; i++) {
-                const h = 10 + Math.random()*20;
-                const b = new THREE.Mesh(new THREE.BoxGeometry(8, h, 8), new THREE.MeshStandardMaterial({color: 0x1a1a1a}));
-                b.position.set(Math.random()*200-100, h/2, Math.random()*200-100);
-                scene.add(b);
-            }
+            // TACTILE
+            document.getElementById('fire-btn').addEventListener('touchstart', (e) => { e.preventDefault(); fire(); });
+            setupJoystick();
 
-            const floor = new THREE.Mesh(new THREE.PlaneGeometry(500,500), new THREE.MeshStandardMaterial({color:0x111111}));
-            floor.rotation.x = -Math.PI/2;
-            scene.add(floor);
-
-            // ARME
-            weapon = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 1), new THREE.MeshStandardMaterial({color: 0x222222}));
-            weapon.position.set(0.4, -0.4, -0.8);
-            camera.add(weapon);
-            scene.add(camera);
-
-            document.getElementById('hud').classList.remove('hidden');
-            document.getElementById('touch-fire').addEventListener('touchstart', fire);
-            
-            for(let i=0; i<10; i++) spawnBot();
+            for(let i=0; i<8; i++) spawnEnemy();
             animate();
         }
 
-        function spawnBot() {
-            const bot = new THREE.Group();
-            const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 1.2), new THREE.MeshStandardMaterial({color: 0x4b5320}));
-            body.position.y = 1;
-            bot.add(body);
-            bot.position.set(Math.random()*100-50, 0, Math.random()*100-50);
-            scene.add(bot);
-            bots.push(bot);
+        function setupJoystick() {
+            const zone = document.getElementById('joystick-zone');
+            zone.addEventListener('touchmove', (e) => {
+                const touch = e.touches[0];
+                const rect = zone.getBoundingClientRect();
+                moveDir.x = (touch.clientX - (rect.left + rect.width/2)) / 50;
+                moveDir.z = (touch.clientY - (rect.top + rect.height/2)) / 50;
+            });
+            zone.addEventListener('touchend', () => { moveDir = {x:0, z:0}; });
+        }
+
+        function spawnEnemy() {
+            const enemy = new THREE.Group();
+            // Corps du soldat
+            const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.4, 1), new THREE.MeshStandardMaterial({color:0x4b5320}));
+            body.position.y = 0.9;
+            // Tête
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.25), new THREE.MeshStandardMaterial({color:0xdbac98}));
+            head.position.y = 1.7;
+            enemy.add(body, head);
+            enemy.position.set(Math.random()*60-30, 0, Math.random()*60-30);
+            scene.add(enemy);
+            enemies.push(enemy);
         }
 
         function fire() {
             if(ammo <= 0 || isPaused) return;
             ammo--;
             document.getElementById('ammo-val').innerText = ammo;
-            if(gunSound.isPlaying) gunSound.stop();
-            gunSound.play();
+            if(gunSound.buffer) gunSound.play();
 
-            // Recul
-            weapon.position.z += 0.1;
-            setTimeout(() => weapon.position.z -= 0.1, 50);
+            // Effet recul
+            weapon.position.z += 0.05;
+            setTimeout(() => weapon.position.z -= 0.05, 50);
 
-            // Hitscan simple
             const ray = new THREE.Raycaster();
             ray.setFromCamera({x:0, y:0}, camera);
-            const hits = ray.intersectObjects(bots, true);
+            const hits = ray.intersectObjects(enemies, true);
             if(hits.length > 0) {
                 const t = hits[0].object.parent;
                 scene.remove(t);
-                bots = bots.filter(b => b !== t);
-                spawnBot();
+                enemies = enemies.filter(e => e !== t);
+                kills++;
+                document.getElementById('kill-count').innerText = kills;
+                spawnEnemy();
             }
         }
 
@@ -158,24 +194,29 @@
             requestAnimationFrame(animate);
             if(isPaused) return;
             const dt = clock.getDelta();
-            
-            // IA & Mouvements simples
-            bots.forEach(b => {
-                b.lookAt(camera.position);
-                b.translateZ(0.04);
+
+            // Déplacement caméra (iPad)
+            camera.translateX(moveDir.x * 0.2);
+            camera.translateZ(moveDir.z * 0.2);
+            camera.position.y = 1.7;
+
+            enemies.forEach(e => {
+                e.lookAt(camera.position);
+                e.translateZ(0.03);
             });
 
             renderer.render(scene, camera);
         }
 
-        // Support Clavier iPad
-        window.onkeydown = (e) => { 
-            if(e.code === 'KeyW') camera.translateZ(-0.5);
-            if(e.code === 'KeyS') camera.translateZ(0.5);
-            if(e.code === 'KeyA') camera.rotation.y += 0.05;
-            if(e.code === 'KeyD') camera.rotation.y -= 0.05;
-            if(e.code === 'Space') fire();
+        // Support clavier iPad (si connecté)
+        window.onkeydown = (e) => {
+            if(e.code==='KeyW') moveDir.z = -1;
+            if(e.code==='KeyS') moveDir.z = 1;
+            if(e.code==='KeyA') camera.rotation.y += 0.05;
+            if(e.code==='KeyD') camera.rotation.y -= 0.05;
+            if(e.code==='Space') fire();
         };
+        window.onkeyup = () => { moveDir = {x:0, z:0}; };
     </script>
 </body>
 </html>
