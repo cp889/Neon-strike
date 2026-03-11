@@ -3,188 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GHOST OPS : VRAI GRAPHISMES</title>
+    <title>GHOST OPS : STABLE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; overflow: hidden; background: #000; touch-action: none; font-family: 'Oswald', sans-serif; }
-        #hud { position: absolute; inset: 0; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; color: white; }
-        .crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; }
-        #fire-btn { position: absolute; bottom: 40px; right: 40px; width: 100px; height: 100px; background: rgba(255,0,0,0.5); border: 3px solid white; border-radius: 50%; pointer-events: auto; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        #joystick { position: absolute; bottom: 40px; left: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border: 2px solid white; border-radius: 50%; pointer-events: auto; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Oswald', sans-serif; touch-action: none; }
+        
+        /* ÉCRAN DE CHARGEMENT POUR ÉVITER LE BLOCAGE */
+        #loader { position: absolute; inset: 0; background: #111; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; color: #ffcc00; }
+        .spinner { width: 50px; height: 50px; border: 5px solid #333; border-top-color: #ffcc00; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* HUD JEU */
+        #hud { position: absolute; inset: 0; pointer-events: none; z-index: 10; display: none; }
+        .crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 24px; height: 24px; border: 1px solid rgba(255,255,255,0.4); border-radius: 50%; }
+        .ammo-ui { position: absolute; bottom: 40px; right: 40px; text-align: right; color: white; }
+        #fire-btn { position: absolute; bottom: 50px; right: 150px; width: 90px; height: 90px; background: rgba(255,0,0,0.6); border: 3px solid white; border-radius: 50%; pointer-events: auto; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
+        #joystick-zone { position: absolute; bottom: 40px; left: 40px; width: 130px; height: 130px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; pointer-events: auto; }
     </style>
 </head>
 <body>
 
+    <div id="loader">
+        <div class="spinner"></div>
+        <div id="load-text">CHARGEMENT DES GRAPHISMES...</div>
+        <button id="start-btn" style="display:none; margin-top:20px; padding:15px 40px; background:#ffcc00; border:none; font-weight:bold; cursor:pointer;">LANCER L'ASSAUT</button>
+    </div>
+
     <div id="hud">
-        <div style="font-size: 24px; color: #ffcc00;">OPERATIONS : LIVE</div>
         <div class="crosshair"></div>
-        <div id="joystick"></div>
+        <div class="ammo-ui">
+            <div style="font-size:12px; opacity:0.6;">M4A1 CUSTOM</div>
+            <div style="font-size:60px; font-weight:900;" id="ammo-count">30</div>
+        </div>
+        <div id="joystick-zone"></div>
         <div id="fire-btn">FEU</div>
     </div>
 
     <script type="importmap">
-        { "imports": { "three": "https://unpkg.com/three@0.150.1/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.150.1/examples/jsm/" } }
+        { "imports": { "three": "https://unpkg.com/three@0.150.1/build/three.module.js" } }
     </script>
 
     <script type="module">
         import * as THREE from 'three';
-        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
         let scene, camera, renderer, clock, weapon;
-        const loader = new GLTFLoader();
+        let ammo = 30, enemies = [];
+        let moveDir = { x: 0, z: 0 };
+        const textureLoader = new THREE.TextureLoader();
 
-        init();
+        // GESTION DU CHARGEMENT
+        const manager = new THREE.LoadingManager();
+        manager.onLoad = () => {
+            document.querySelector('.spinner').style.display = 'none';
+            document.getElementById('load-text').innerText = "UNITÉ PRÊTE";
+            document.getElementById('start-btn').style.display = 'block';
+        };
+
+        document.getElementById('start-btn').onclick = () => {
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('hud').style.display = 'block';
+            init();
+        };
 
         function init() {
             scene = new THREE.Scene();
             clock = new THREE.Clock();
-            
-            // 1. CIEL RÉALISTE (Image 360°)
-            const texLoader = new THREE.TextureLoader();
-            scene.background = texLoader.load('https://threejs.org/examples/textures/2294472375_b9a84c5c3d_o.jpg');
 
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            // 1. LE CIEL (Skybox réaliste)
+            scene.background = textureLoader.load('https://threejs.org/examples/textures/2294472375_b9a84c5c3d_o.jpg');
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Optimisation iPad
             renderer.outputEncoding = THREE.sRGBEncoding;
-            renderer.toneMapping = THREE.ACESFilmicToneMapping; // Rendu comme au cinéma
             document.body.appendChild(renderer.domElement);
 
-            // 2. LUMIÈRE DU SOLEIL (Essentiel pour le réalisme)
-            const sun = new THREE.DirectionalLight(0xffffff, 2);
+            // 2. LUMIÈRE CINÉMATIQUE
+            const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambient);
+            const sun = new THREE.DirectionalLight(0xffffff, 1.2);
             sun.position.set(50, 100, 50);
             scene.add(sun);
-            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 
-            // 3. CHARGEMENT DU DÉCOR (Exemple : Maison/Ville)
-            // Remplace l'URL par ton propre fichier .glb sur GitHub
-            loader.load('https://threejs.org/examples/models/gltf/Soldier.glb', (gltf) => {
-                const map = gltf.scene;
-                map.scale.set(10, 10, 10); // Agrandir le décor
-                scene.add(map);
-            });
+            // 3. LE SOL (Herbe/Terre texturée)
+            const groundTex = textureLoader.load('https://threejs.org/examples/textures/terrain/grasslight-big.jpg');
+            groundTex.wrapS = groundTex.wrapT = THREE.RepeatWrapping;
+            groundTex.repeat.set(25, 25);
+            const ground = new THREE.Mesh(
+                new THREE.PlaneGeometry(500, 500),
+                new THREE.MeshStandardMaterial({ map: groundTex })
+            );
+            ground.rotation.x = -Math.PI / 2;
+            scene.add(ground);
 
-            // 4. L'ARME (Vue FPS)
+            // 4. L'ARME (Design haute précision)
             weapon = new THREE.Group();
-            const gMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 1, roughness: 0.2 });
-            const body = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 1), gMat);
-            weapon.add(body);
-            weapon.position.set(0.5, -0.5, -1);
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.25, 0.8), new THREE.MeshStandardMaterial({color: 0x151515, metalness: 0.8, roughness: 0.2}));
+            const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.6), new THREE.MeshStandardMaterial({color: 0x050505}));
+            barrel.rotation.x = Math.PI / 2;
+            barrel.position.z = -0.6;
+            weapon.add(body, barrel);
+            weapon.position.set(0.45, -0.4, -0.7);
             camera.add(weapon);
             scene.add(camera);
 
+            // CONTROLES
+            setupControls();
+            for(let i=0; i<10; i++) spawnSoldier();
+            
             animate();
         }
 
-        function fire() {
-            // Son et recul
-            weapon.position.z += 0.1;
-            setTimeout(() => weapon.position.z -= 0.1, 50);
-            // Ici on ajoute l'effet de flash à la bouche du canon
+        function spawnSoldier() {
+            const soldier = new THREE.Group();
+            const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.4, 1.2), new THREE.MeshStandardMaterial({color: 0x4b5320}));
+            body.position.y = 1;
+            soldier.add(body);
+            soldier.position.set(Math.random()*100-50, 0, Math.random()*100-50);
+            scene.add(soldier);
+            enemies.push(soldier);
         }
 
-        document.getElementById('fire-btn').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            fire();
-        });
-
-        function animate() {
-            requestAnimationFrame(animate);
-            renderer.render(scene, camera);
-        }
-    </script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GHOST OPS : VRAI GRAPHISMES</title>
-    <style>
-        body { margin: 0; overflow: hidden; background: #000; touch-action: none; font-family: 'Oswald', sans-serif; }
-        #hud { position: absolute; inset: 0; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; color: white; }
-        .crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; }
-        #fire-btn { position: absolute; bottom: 40px; right: 40px; width: 100px; height: 100px; background: rgba(255,0,0,0.5); border: 3px solid white; border-radius: 50%; pointer-events: auto; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        #joystick { position: absolute; bottom: 40px; left: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border: 2px solid white; border-radius: 50%; pointer-events: auto; }
-    </style>
-</head>
-<body>
-
-    <div id="hud">
-        <div style="font-size: 24px; color: #ffcc00;">OPERATIONS : LIVE</div>
-        <div class="crosshair"></div>
-        <div id="joystick"></div>
-        <div id="fire-btn">FEU</div>
-    </div>
-
-    <script type="importmap">
-        { "imports": { "three": "https://unpkg.com/three@0.150.1/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.150.1/examples/jsm/" } }
-    </script>
-
-    <script type="module">
-        import * as THREE from 'three';
-        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-
-        let scene, camera, renderer, clock, weapon;
-        const loader = new GLTFLoader();
-
-        init();
-
-        function init() {
-            scene = new THREE.Scene();
-            clock = new THREE.Clock();
-            
-            // 1. CIEL RÉALISTE (Image 360°)
-            const texLoader = new THREE.TextureLoader();
-            scene.background = texLoader.load('https://threejs.org/examples/textures/2294472375_b9a84c5c3d_o.jpg');
-
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.outputEncoding = THREE.sRGBEncoding;
-            renderer.toneMapping = THREE.ACESFilmicToneMapping; // Rendu comme au cinéma
-            document.body.appendChild(renderer.domElement);
-
-            // 2. LUMIÈRE DU SOLEIL (Essentiel pour le réalisme)
-            const sun = new THREE.DirectionalLight(0xffffff, 2);
-            sun.position.set(50, 100, 50);
-            scene.add(sun);
-            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-
-            // 3. CHARGEMENT DU DÉCOR (Exemple : Maison/Ville)
-            // Remplace l'URL par ton propre fichier .glb sur GitHub
-            loader.load('https://threejs.org/examples/models/gltf/Soldier.glb', (gltf) => {
-                const map = gltf.scene;
-                map.scale.set(10, 10, 10); // Agrandir le décor
-                scene.add(map);
+        function setupControls() {
+            const fireBtn = document.getElementById('fire-btn');
+            fireBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                fire();
             });
 
-            // 4. L'ARME (Vue FPS)
-            weapon = new THREE.Group();
-            const gMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 1, roughness: 0.2 });
-            const body = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 1), gMat);
-            weapon.add(body);
-            weapon.position.set(0.5, -0.5, -1);
-            camera.add(weapon);
-            scene.add(camera);
-
-            animate();
+            const joystick = document.getElementById('joystick-zone');
+            joystick.addEventListener('touchmove', (e) => {
+                const touch = e.touches[0];
+                const rect = joystick.getBoundingClientRect();
+                moveDir.x = (touch.clientX - (rect.left + rect.width/2)) / 40;
+                moveDir.z = (touch.clientY - (rect.top + rect.height/2)) / 40;
+            });
+            joystick.addEventListener('touchend', () => { moveDir = {x:0, z:0}; });
         }
 
         function fire() {
-            // Son et recul
+            if(ammo <= 0) return;
+            ammo--;
+            document.getElementById('ammo-count').innerText = ammo;
+            
+            // Recul fluide
             weapon.position.z += 0.1;
             setTimeout(() => weapon.position.z -= 0.1, 50);
-            // Ici on ajoute l'effet de flash à la bouche du canon
-        }
 
-        document.getElementById('fire-btn').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            fire();
-        });
+            // Raycast pour tuer
+            const ray = new THREE.Raycaster();
+            ray.setFromCamera({x:0, y:0}, camera);
+            const hits = ray.intersectObjects(enemies, true);
+            if(hits.length > 0) {
+                const target = hits[0].object.parent;
+                scene.remove(target);
+                enemies = enemies.filter(e => e !== target);
+                spawnSoldier();
+            }
+        }
 
         function animate() {
             requestAnimationFrame(animate);
+            
+            // Déplacement fluide
+            camera.translateX(moveDir.x * 0.15);
+            camera.translateZ(moveDir.z * 0.15);
+            camera.position.y = 1.7; // Taille humaine
+
+            // IA simple
+            enemies.forEach(e => {
+                e.lookAt(camera.position);
+                e.translateZ(0.04);
+            });
+
             renderer.render(scene, camera);
         }
     </script>
