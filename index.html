@@ -3,67 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GHOST OPS : WARZONE WEB</title>
+    <title>GHOST OPS : WARZONE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap" rel="stylesheet">
     <style>
-        :root { --ui-red: #ff3e3e; --ui-gold: #ffcc00; }
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Oswald', sans-serif; }
+        :root { --gold: #ffcc00; --danger: #ff3e3e; }
+        body { margin: 0; overflow: hidden; background: #050505; font-family: 'Oswald', sans-serif; color: white; }
         
-        /* OVERLAYS SYSTEM */
-        .screen { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.85); z-index: 100; color: white; }
+        /* INTERFACE MENUS */
+        .overlay { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.9); z-index: 100; }
+        .card { background: #111; border-left: 4px solid var(--gold); padding: 40px; width: 300px; text-align: center; box-shadow: 0 0 50px black; }
         .hidden { display: none !important; }
-        .menu-card { background: rgba(20,20,20,0.95); border-left: 5px solid var(--ui-gold); padding: 40px; width: 350px; box-shadow: 0 0 50px rgba(0,0,0,1); }
         
-        input, select, button { width: 100%; padding: 15px; margin: 10px 0; background: #1a1a1a; border: 1px solid #333; color: white; text-transform: uppercase; letter-spacing: 1px; }
-        button { background: var(--ui-gold); color: black; font-weight: 900; border: none; cursor: pointer; }
+        input, select, button { width: 100%; padding: 15px; margin: 10px 0; background: #1a1a1a; border: 1px solid #333; color: white; text-transform: uppercase; font-family: inherit; }
+        button { background: var(--gold); color: black; font-weight: 900; cursor: pointer; border: none; transition: 0.2s; }
         button:hover { background: white; }
 
-        /* HUD CALL OF DUTY STYLE */
+        /* HUD JEU (STYLE COD MOBILE) */
         #hud { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
-        .reticle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 30px; height: 30px; border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; }
-        .reticle::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 4px; height: 4px; background: red; border-radius: 50%; }
+        .crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 24px; height: 24px; border: 1px solid rgba(255,255,255,0.3); border-radius: 50%; }
+        .crosshair::before { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 2px; height: 2px; background: red; }
         
-        .bottom-left { position: absolute; bottom: 30px; left: 30px; }
-        .health-num { font-size: 40px; font-weight: bold; }
-        .health-bar { width: 200px; height: 6px; background: rgba(255,255,255,0.2); margin-top: 5px; }
-        #health-fill { width: 100%; height: 100%; background: white; transition: 0.2s; }
-
-        .weapon-info { position: absolute; bottom: 30px; right: 30px; text-align: right; }
-        .ammo { font-size: 50px; font-weight: bold; line-height: 1; }
+        .top-info { position: absolute; top: 20px; left: 20px; text-transform: uppercase; }
+        .score-val { font-size: 30px; color: var(--gold); line-height: 1; }
+        
+        .bottom-right { position: absolute; bottom: 40px; right: 40px; text-align: right; }
+        .ammo-count { font-size: 60px; font-weight: 900; line-height: 0.8; }
+        
+        #blood { position: absolute; inset: 0; background: radial-gradient(circle, transparent 30%, rgba(200,0,0,0.4) 100%); opacity: 0; transition: 0.1s; pointer-events: none; }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <div id="login-screen" class="screen">
-        <div class="menu-card">
-            <h2 style="color: var(--ui-gold)">IDENTIFICATION REQUISE</h2>
-            <input type="password" id="pass" placeholder="CODE D'ACCÈS">
-            <button onclick="unlock()">SE CONNECTER</button>
+    <div id="blood"></div>
+
+    <div id="login-screen" class="overlay">
+        <div class="card">
+            <h2 style="color: var(--gold)">IDENTIFICATION</h2>
+            <input type="password" id="pass" placeholder="PASSWORD_">
+            <button onclick="unlock()">ACCESS SYSTEM</button>
         </div>
     </div>
 
-    <div id="menu-screen" class="screen hidden">
-        <div class="menu-card">
-            <h1>GHOST OPS</h1>
-            <label>ZONE D'OPÉRATION :</label>
+    <div id="menu-screen" class="overlay hidden">
+        <div class="card">
+            <h1 style="margin:0">GHOST OPS</h1>
+            <p style="font-size: 10px; opacity: 0.5">VERSION 1.0.4 - STABLE</p>
+            <label>ZONE D'OPÉRATION</label>
             <select id="map">
-                <option value="paris">PARIS : RUE DE RIVOLI</option>
-                <option value="base">BASE MILITAIRE DÉSAFFECTÉE</option>
-                <option value="space">STATION SPATIALE ISS-2</option>
+                <option value="paris">PARIS : DOWNTOWN</option>
+                <option value="base">BASE MILITAIRE</option>
+                <option value="space">STATION ORBITALE</option>
             </select>
-            <button onclick="startMission()">DÉPLOYER</button>
+            <button onclick="start()">DÉPLOYER</button>
+            <p id="best-score" style="margin-top:20px; color: var(--gold); font-size: 12px;">BEST: 0</p>
         </div>
     </div>
 
     <div id="hud" class="hidden">
-        <div class="reticle"></div>
-        <div class="bottom-left">
-            <div class="health-num">100</div>
-            <div class="health-bar"><div id="health-fill"></div></div>
+        <div class="top-info">
+            SCORE<br><span id="current-score" class="score-val">0000</span>
         </div>
-        <div class="weapon-info">
-            <div style="font-size: 12px; opacity: 0.7;">FUSIL D'ASSAULT M4</div>
-            <div class="ammo">30<span style="font-size: 20px; opacity: 0.5;"> / 90</span></div>
+        <div class="crosshair"></div>
+        <div class="bottom-right">
+            <div style="font-size: 12px; opacity: 0.7; letter-spacing: 2px;">M4A1 FULL AUTO</div>
+            <div class="ammo-count"><span id="ammo">30</span><span style="font-size: 20px; opacity: 0.4;">/90</span></div>
         </div>
     </div>
 
@@ -74,12 +77,15 @@
     <script type="module">
         import * as THREE from 'three';
 
-        let scene, camera, renderer, clock, gun;
-        let bots = [], bullets = [];
-        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-        let yaw = 0, pitch = 0;
+        let scene, camera, renderer, clock, weapon;
+        let bots = [], bullets = [], score = 0, ammo = 30;
+        let move = { f: false, b: false, l: false, r: false };
+        let rotation = { y: 0, x: 0 };
 
-        // --- AUTH & LAUNCH ---
+        // --- AUTH & SCORE ---
+        const best = localStorage.getItem('ghost_best') || 0;
+        document.getElementById('best-score').innerText = `BEST RECORD: ${best}`;
+
         window.unlock = () => {
             if(document.getElementById('pass').value === "NEON2026") {
                 document.getElementById('login-screen').classList.add('hidden');
@@ -87,17 +93,17 @@
             }
         };
 
-        window.startMission = () => {
+        window.start = () => {
             document.getElementById('menu-screen').classList.add('hidden');
             document.getElementById('hud').classList.remove('hidden');
-            initEngine();
-            document.body.requestPointerLock(); // Bloque la souris pour le FPS
+            init();
+            document.body.requestPointerLock();
         };
 
-        function initEngine() {
+        function init() {
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x111111);
-            scene.fog = new THREE.Fog(0x111111, 0, 100);
+            scene.background = new THREE.Color(0x0a0a0a);
+            scene.fog = new THREE.Fog(0x0a0a0a, 0, 100);
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             
@@ -107,108 +113,112 @@
             document.body.appendChild(renderer.domElement);
             clock = new THREE.Clock();
 
-            // LUMIÈRES RÉALISTES
-            const ambient = new THREE.AmbientLight(0xffffff, 0.5);
-            scene.add(ambient);
+            // LUMIÈRE AAA
+            scene.add(new THREE.AmbientLight(0xffffff, 0.3));
             const sun = new THREE.DirectionalLight(0xffffff, 1);
-            sun.position.set(10, 20, 10);
+            sun.position.set(20, 50, 10);
             sun.castShadow = true;
             scene.add(sun);
 
-            // SOL (TEXTURÉ)
-            const floorGeo = new THREE.PlaneGeometry(1000, 1000);
-            const floorMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
-            const floor = new THREE.Mesh(floorGeo, floorMat);
+            // SOL RÉALISTE (BETON SOMBRE)
+            const floor = new THREE.Mesh(
+                new THREE.PlaneGeometry(1000, 1000), 
+                new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 })
+            );
             floor.rotation.x = -Math.PI / 2;
             floor.receiveShadow = true;
             scene.add(floor);
 
-            // CRÉATION DE L'ARME (VUE FPS)
-            gun = new THREE.Group();
-            const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 1.5), new THREE.MeshStandardMaterial({color: 0x111111}));
-            barrel.position.set(0.5, -0.5, -1);
-            gun.add(barrel);
-            camera.add(gun);
+            // ARME FPS (VRAI MODÈLE)
+            weapon = new THREE.Group();
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.25, 0.8), new THREE.MeshStandardMaterial({color: 0x111111}));
+            const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.6), new THREE.MeshStandardMaterial({color: 0x050505}));
+            barrel.rotation.x = Math.PI/2;
+            barrel.position.z = -0.7;
+            weapon.add(body, barrel);
+            weapon.position.set(0.5, -0.4, -0.6); // Positionné comme dans CoD
+            camera.add(weapon);
             scene.add(camera);
 
-            // ENNEMIS (SOLDIERS)
-            for(let i=0; i<10; i++) spawnSoldier();
+            for(let i=0; i<15; i++) spawnEnemy();
 
-            // ÉCOUTEURS
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mousedown', () => shoot());
-            window.addEventListener('keydown', (e) => handleKey(e.code, true));
-            window.addEventListener('keyup', (e) => handleKey(e.code, false));
+            // CONTRÔLES SOURIS
+            document.addEventListener('mousemove', (e) => {
+                if(document.pointerLockElement) {
+                    rotation.y -= e.movementX * 0.002;
+                    rotation.x -= e.movementY * 0.002;
+                    rotation.x = Math.max(-1.5, Math.min(1.5, rotation.x));
+                    camera.rotation.set(rotation.x, rotation.y, 0, 'YXZ');
+                }
+            });
+
+            document.addEventListener('mousedown', fire);
+            window.onkeydown = (e) => { toggleMove(e.code, true); if(e.code==='KeyR') ammo=30; };
+            window.onkeyup = (e) => toggleMove(e.code, false);
 
             animate();
         }
 
-        function spawnSoldier() {
-            const bot = new THREE.Mesh(
-                new THREE.CapsuleGeometry(0.5, 1.2, 4, 8),
-                new THREE.MeshStandardMaterial({ color: 0x4b5320 }) // Kaki
-            );
-            bot.position.set(Math.random()*100-50, 1, Math.random()*100-50);
-            bot.castShadow = true;
-            bot.userData = { health: 100 };
-            scene.add(bot);
-            bots.push(bot);
+        function spawnEnemy() {
+            const enemy = new THREE.Group();
+            const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 1.2), new THREE.MeshStandardMaterial({color: 0x333333}));
+            body.position.y = 1;
+            enemy.add(body);
+            enemy.position.set(Math.random()*150-75, 0, Math.random()*150-75);
+            enemy.userData = { hp: 100 };
+            scene.add(enemy);
+            bots.push(enemy);
         }
 
-        function onMouseMove(e) {
-            if (document.pointerLockElement === document.body) {
-                yaw -= e.movementX * 0.002;
-                pitch -= e.movementY * 0.002;
-                pitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, pitch));
-                camera.rotation.order = "YXZ";
-                camera.rotation.set(pitch, yaw, 0);
+        function fire() {
+            if(ammo <= 0) return;
+            ammo--;
+            document.getElementById('ammo').innerText = ammo;
+
+            // Recul de l'arme
+            weapon.position.z += 0.05;
+            weapon.rotation.x -= 0.05;
+            setTimeout(() => { weapon.position.z -= 0.05; weapon.rotation.x += 0.05; }, 50);
+
+            // Raycasting (Tir instantané)
+            const ray = new THREE.Raycaster();
+            ray.setFromCamera({x:0, y:0}, camera);
+            const hits = ray.intersectObjects(bots, true);
+            
+            if(hits.length > 0) {
+                const target = hits[0].object.parent;
+                scene.remove(target);
+                bots = bots.filter(b => b !== target);
+                score += 125;
+                document.getElementById('current-score').innerText = score.toString().padStart(4, '0');
+                if(score > best) localStorage.setItem('ghost_best', score);
+                spawnEnemy();
             }
         }
 
-        function handleKey(code, isDown) {
-            if(code === 'KeyW' || code === 'ArrowUp') moveForward = isDown;
-            if(code === 'KeyS' || code === 'ArrowDown') moveBackward = isDown;
-            if(code === 'KeyA' || code === 'ArrowLeft') moveLeft = isDown;
-            if(code === 'KeyD' || code === 'ArrowRight') moveRight = isDown;
-        }
-
-        function shoot() {
-            const bullet = new THREE.Mesh(new THREE.SphereGeometry(0.05), new THREE.MeshBasicMaterial({color: 0xffff00}));
-            bullet.position.copy(camera.position);
-            bullet.quaternion.copy(camera.quaternion);
-            scene.add(bullet);
-            bullets.push(bullet);
-            setTimeout(() => { scene.remove(bullet); bullets.shift(); }, 1000);
+        function toggleMove(c, v) {
+            if(c==='KeyW' || c==='ArrowUp') move.f=v;
+            if(c==='KeyS' || c==='ArrowDown') move.b=v;
+            if(c==='KeyA' || c==='ArrowLeft') move.l=v;
+            if(c==='KeyD' || c==='ArrowRight') move.r=v;
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            const delta = clock.getDelta();
-            
-            // DÉPLACEMENT
-            const speed = 5 * delta;
-            if (moveForward) camera.translateZ(-speed);
-            if (moveBackward) camera.translateZ(speed);
-            if (moveLeft) camera.translateX(-speed);
-            if (moveRight) camera.translateX(speed);
-            camera.position.y = 1.7; // Taille humaine
+            const dt = clock.getDelta();
+            const s = 10 * dt;
 
-            // BALLES & COLLISIONS
-            bullets.forEach((b, bi) => {
-                b.translateZ(-2);
-                bots.forEach((bot, botI) => {
-                    if(b.position.distanceTo(bot.position) < 1) {
-                        scene.remove(bot);
-                        bots.splice(botI, 1);
-                        spawnSoldier();
-                    }
-                });
-            });
+            if(move.f) camera.translateZ(-s); if(move.b) camera.translateZ(s);
+            if(move.l) camera.translateX(-s); if(move.r) camera.translateX(s);
+            camera.position.y = 1.7;
 
-            // IA BOTS
             bots.forEach(bot => {
                 bot.lookAt(camera.position);
-                bot.translateZ(0.03);
+                bot.translateZ(0.05);
+                if(bot.position.distanceTo(camera.position) < 3) {
+                    document.getElementById('blood').style.opacity = "1";
+                    setTimeout(() => document.getElementById('blood').style.opacity = "0", 100);
+                }
             });
 
             renderer.render(scene, camera);
