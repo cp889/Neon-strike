@@ -43,13 +43,14 @@
         let moveDir = { x: 0, z: 0 };
         const loader = new GLTFLoader();
 
-        // --- CONFIGURATION CRITIQUE ---
-        // Vérifie les majuscules et les espaces ici !
+                // --- CONFIGURATION DES FICHIERS ---
+        // Vérifie que les noms sur GitHub sont EXACTEMENT ceux-là (Majuscules incluses)
         const MODELS = {
             tank: './Tank.glb',
             road: './Road Piece Straight.glb',
             tent: './Military Tent.glb',
             soldier: './Soldier.glb'
+
         };
 
         const manager = new THREE.LoadingManager();
